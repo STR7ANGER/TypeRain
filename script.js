@@ -6,13 +6,18 @@ const yourScoreDisplay = document.getElementById('your-score');
 let words = [];
 let score = 0;
 let highScore = 0;
+let lives = 3;
+let dropSpeed = 2;
+let spawnRate = 3500;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 function startGame() {
-    setInterval(dropWord, 3000); // Drop a word every 3 seconds
-    setInterval(moveWordsDown, 50);
+    dropWord(); // Drop the first word immediately
+    setInterval(dropWord, spawnRate); // Continue dropping words at the current spawn rate
+    setInterval(moveWordsDown, 50); // Move words down every 50ms
+    setInterval(increaseDifficulty, 5000); // Increase difficulty every 5 seconds
     window.addEventListener('keydown', handleTyping);
 }
 
@@ -25,7 +30,7 @@ function dropWord() {
                 x: canvas.width / 2, // Center horizontally
                 y: -50, // Start above the screen
                 ready: false,
-                timer: 5 // 5-second delay before the word can be typed
+                timer: 0 // No delay before the word can be typed
             };
             words.push(word);
         })
@@ -35,7 +40,7 @@ function dropWord() {
 function moveWordsDown() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     words.forEach((word, index) => {
-        word.y += 2; // Speed of the word falling
+        word.y += dropSpeed; // Speed of the word falling, increasing over time
         word.timer -= 0.05; // Decrease the timer
 
         if (word.timer <= 0) {
@@ -49,7 +54,8 @@ function moveWordsDown() {
 
         // Game over if word reaches the bottom of the screen
         if (word.y >= canvas.height) {
-            endGame();
+            words = words.filter(w => w !== word); // Remove the word
+            loseLife();
         }
     });
 }
@@ -63,7 +69,7 @@ function handleTyping(event) {
         if (activeWord) {
             activeWord.text = activeWord.text.slice(1); // Remove the typed character
             if (activeWord.text.length === 0) {
-                score += activeWord.text.length;
+                score += 10; // 10 points for each word
                 yourScoreDisplay.textContent = `Your Score: ${score}`;
                 words = words.filter(word => word !== activeWord); // Remove the word from the array
                 if (score > highScore) {
@@ -75,17 +81,55 @@ function handleTyping(event) {
     }
 }
 
-function endGame() {
-    alert(`Game Over! Your final score is: ${score}`);
-    resetGame();
+function loseLife() {
+    lives--;
+    if (lives > 0) {
+        resetGame();
+    } else {
+        showRestartButton();
+    }
 }
 
 function resetGame() {
     words = [];
-    score = 0;
     yourScoreDisplay.textContent = `Your Score: ${score}`;
     highScoreDisplay.textContent = `High Score: ${highScore}`;
-    startGame();
+}
+
+function showRestartButton() {
+    const restartButton = document.createElement('button');
+    restartButton.textContent = 'Restart';
+    restartButton.style.position = 'absolute';
+    restartButton.style.top = '50%';
+    restartButton.style.left = '50%';
+    restartButton.style.transform = 'translate(-50%, -50%)';
+    restartButton.style.padding = '10px 20px';
+    restartButton.style.fontSize = '1.5em';
+    restartButton.style.backgroundColor = '#fff';
+    restartButton.style.border = 'none';
+    restartButton.style.cursor = 'pointer';
+    document.body.appendChild(restartButton);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '46px Kaushan Script';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.fillText(score > highScore ? `New High Score: ${score}` : `Your Score: ${score}`, canvas.width / 2, canvas.height / 2 - 50);
+
+    restartButton.addEventListener('click', () => {
+        lives = 3;
+        score = 0;
+        dropSpeed = 2; // Reset drop speed
+        spawnRate = 3500; // Reset spawn rate
+        resetGame();
+        document.body.removeChild(restartButton);
+        startGame();
+    });
+}
+
+function increaseDifficulty() {
+    dropSpeed += 0.1; // Increase drop speed
+    spawnRate = Math.max(1000, spawnRate - 100); // Decrease spawn rate, minimum 1 second
 }
 
 startGame();
