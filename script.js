@@ -21,22 +21,6 @@ function startGame() {
     window.addEventListener('keydown', handleTyping);
 }
 
-function dropWord() {
-    fetch(`https://random-word-api.herokuapp.com/word?number=1`)
-        .then(response => response.json())
-        .then(data => {
-            const word = {
-                text: data[0],
-                x: canvas.width / 2, // Center horizontally
-                y: -50, // Start above the screen
-                ready: false,
-                timer: 0 // No delay before the word can be typed
-            };
-            words.push(word);
-        })
-        .catch(error => console.error('Error fetching words:', error));
-}
-
 function moveWordsDown() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     words.forEach((word, index) => {
@@ -47,8 +31,15 @@ function moveWordsDown() {
             word.ready = true; // Mark word as ready to type
         }
 
+        // Check if word is going out of border
+        if (word.x < 0) {
+            word.x = 0;
+        } else if (word.x > canvas.width) {
+            word.x = canvas.width;
+        }
+
         ctx.font = '46px Kaushan Script';
-        ctx.fillStyle = word.ready ? 'white' : 'gray'; // Gray before it's ready, white when it's ready
+        ctx.fillStyle = word.color; // Use the word's assigned color
         ctx.textAlign = 'center';
         ctx.fillText(word.text, word.x, word.y);
 
@@ -60,6 +51,27 @@ function moveWordsDown() {
     });
 }
 
+function dropWord() {
+    fetch(`https://random-word-api.herokuapp.com/word?number=1`)
+        .then(response => response.json())
+        .then(data => {
+            const word = {
+                text: data[0],
+                x: Math.random() * canvas.width, // Random x position
+                y: -50, // Start above the screen
+                ready: false,
+                timer: 0, // No delay before the word can be typed
+                color: getRandomNeonColor() // Assign a random neon color to the word
+            };
+            words.push(word);
+        })
+        .catch(error => console.error('Error fetching words:', error));
+}
+
+function getRandomNeonColor() {
+    const neonColors = ['#33CCFF', '#FF99CC', '#CCFF33', '#FFCC00', '#33FFCC'];
+    return neonColors[Math.floor(Math.random() * neonColors.length)];
+}
 function handleTyping(event) {
     const key = event.key;
 
